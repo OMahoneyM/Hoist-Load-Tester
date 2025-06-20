@@ -6,6 +6,7 @@ This software is used to connect to a networked modbus and record current draw f
 **Tech used:** Python, PySide6
 
 
-## Optimization
+## Optimization:
+
 
 ## Lessons Learned:
