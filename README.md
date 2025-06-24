@@ -3,7 +3,7 @@ This software is used to connect to a networked modbus and record current draw f
 
 ## How It's Made:
 
-**Tech used:** Python, PySide6
+**Tech used:** Python, PySide6, PyModBus, PyMuPDF, PyInstaller
 
 
 ## Optimization:
