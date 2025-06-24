@@ -21,7 +21,7 @@ class PDFTemplateApp(QWidget):
         form_layout = QFormLayout()
 
         # create input fields
-        self.modbus_ip = QLineEdit(text="192.168.13.51")
+        self.modbus_ip = QLineEdit(text="192.168.13.11")
         self.tester_input = QLineEdit()
         self.owner_input = QLineEdit()
         self.address_input = QLineEdit()
