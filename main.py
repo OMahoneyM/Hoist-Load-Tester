@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QIcon, QPixmap
 import sys
+import platform
 import time
 import fitz  # PyMuPDF
 import ctypes
@@ -18,6 +19,13 @@ class PDFTemplateApp(QWidget):
         super().__init__()
         self.setWindowTitle("AVL Load Tester")
         self.set_icon()
+
+        # Use a Windows call from Python, to explicitly tell Windows 
+        # what the correct AppUserModelID is for this process and display:
+        if platform.system() == 'Windows':
+            myappid = 'HoistLoadTester.1.0' # arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
         self.setup_ui()
 
     def set_icon(self):
