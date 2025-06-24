@@ -3,9 +3,12 @@ from PySide6.QtWidgets import (
     QLineEdit, QPushButton, QFileDialog, QMessageBox, 
     QComboBox, QRadioButton, QButtonGroup, QHBoxLayout
 )
+from PySide6.QtGui import QIcon, QPixmap
 import sys
-import fitz  # PyMuPDF
 import time
+import fitz  # PyMuPDF
+import ctypes
+
 # Add this import to use your Modbus reading function
 from clienttest import read_first_six_3000_parameters
 
@@ -14,7 +17,13 @@ class PDFTemplateApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AVL Load Tester")
+        self.set_icon()
         self.setup_ui()
+
+    def set_icon(self):
+        icon = QIcon(QPixmap("assets/icons/hlt_hex_power_icon256.png"))
+        self.setWindowIcon(icon)
+
 
     def setup_ui(self):
         layout = QVBoxLayout()
