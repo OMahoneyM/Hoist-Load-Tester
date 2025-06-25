@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QIcon, QPixmap
 import sys
+import os
 import platform
 import time
 import fitz  # PyMuPDF
@@ -29,7 +30,8 @@ class PDFTemplateApp(QWidget):
         self.setup_ui()
 
     def set_icon(self):
-        icon = QIcon(QPixmap("assets/icons/hlt_hex_power_icon256.png"))
+        icon_path = os.path.join(sys._MEIPASS, 'icon.png')        
+        icon = QIcon(QPixmap(icon_path))
         self.setWindowIcon(icon)
 
 
