@@ -113,39 +113,35 @@ class PDFTemplateApp(QWidget):
         self.setLayout(layout)
 
     def start_task(self):
-        # reset progress bar
-        self.progress_bar.setValue(0)
-        # disable button click while running
-        self.run_test_btn.setEnabled(False)
+            # reset progress bar
+            self.progress_bar.setValue(0)
+            # disable button click while running
+            self.run_test_btn.setEnabled(False)
 
-        # instantiate thread
-        self.thread = QThread()
-        # instantiate connection to modbus
-        self.client = ModbusConnect(self.modbus_ip.text())
-        # instantiate modbus register reading worker object
-        self.worker = ReadRegisterWorker(self.client)
-        # move worker to thread
-        self.worker.moveToThread(self.thread)
+            # instantiate thread
+            self.thread = QThread()
+            # instantiate connection to modbus
+            self.client = ModbusConnect(self.modbus_ip.text())
+            # instantiate modbus register reading worker object
+            self.worker = ReadRegisterWorker(self.client)
+            # move worker to thread
+            self.worker.moveToThread(self.thread)
 
-        # connect QThread started signal to worker's method
-        self.thread.started.connect(self.worker.read_registers)
-        # update the progress bar
-        self.worker.progress_updated.connect(self.update_progress_bar)
-        # connect output to function
-        self.worker.amp_readings.connect(self.post_amp_readings)
-        # allow user to press button again
-        self.worker.finished.connect(self.process_finished)
-        # shutdown thread's event loop
-        self.worker.finished.connect(self.thread.quit)
-        # clean up worker
-        self.worker.finished.connect(self.worker.deleteLater)
-        # clean up thread
-        self.thread.finished.connect(self.thread.deleteLater)
-        
-        # Call start() on the QThread instance to begin execution 
-        # of the thread and its event loop, which will then trigger 
-        # the connected worker's method.
-        self.thread.start()
+            # connect QThread started signal to worker's method
+            self.thread.started.connect(self.worker.read_registers)
+            # update the progress bar
+            self.worker.progress_updated.connect(self.update_progress_bar)
+            # connect output to function
+            self.worker.amp_readings.connect(self.post_amp_readings)
+            # catch errors on the thread
+            self.worker.error_catch.connect(self.error_handler)
+            # allow user to press button again
+            self.worker.finished.connect(self.process_finished)
+            
+            # Call start() on the QThread instance to begin execution 
+            # of the thread and its event loop, which will then trigger 
+            # the connected worker's method.
+            self.thread.start()
 
     def update_progress_bar(self, value):
         self.progress_bar.setValue(value)
@@ -155,8 +151,22 @@ class PDFTemplateApp(QWidget):
         self.actual_i_p2_input.setText("{:.2f}".format(result.get("current_2")))
         self.actual_i_p3_input.setText("{:.2f}".format(result.get("current_3")))
     
-    def process_finished(self):
+    def stop_thread(self):
         self.run_test_btn.setEnabled(True)
+        # shutdown thread's event loop
+        self.thread.quit()
+        # clean up worker
+        self.worker.deleteLater()
+        # clean up thread
+        self.thread.deleteLater()
+
+    def error_handler(self, status, message):
+        if status: 
+            self.stop_thread()
+            QMessageBox.warning(self, "Modbus Error", f"${message}")
+  
+    def process_finished(self):
+        self.stop_thread()
         print("Process completed!")
 
     # connect to modbus and write values to form
