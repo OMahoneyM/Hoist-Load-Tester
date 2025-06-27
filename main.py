@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QThread, Signal
 
+from modbus_module import ModbusConnect, ReadRegisterWorker
+
 import sys
 import os
 import platform
@@ -13,16 +15,12 @@ import time
 import fitz  # PyMuPDF
 import ctypes
 
-# Add this import to use your Modbus reading function
-from clienttest import read_first_six_3000_parameters
-from modbus_module import ModbusConnect, ReadRegisterWorker
-
 
 class PDFTemplateApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AVL Load Tester")
-        # self.set_icon()
+        self.set_icon()
         self.setup_ui()
 
     def set_icon(self):
@@ -34,7 +32,6 @@ class PDFTemplateApp(QWidget):
         if platform.system() == 'Windows':
             myappid = 'HoistLoadTester.1.0' # arbitrary string
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
 
     def setup_ui(self):
         layout = QVBoxLayout()
@@ -168,21 +165,6 @@ class PDFTemplateApp(QWidget):
     def process_finished(self):
         self.stop_thread()
         print("Process completed!")
-
-    # connect to modbus and write values to form
-    def test_load(self):
-        print("Test Running")
-
-        params = read_first_six_3000_parameters(self.modbus_ip.text())
-        
-        if params:
-            self.actual_i_p1_input.setText("{:.2f}".format(params.get("current_1")))
-            self.actual_i_p2_input.setText("{:.2f}".format(params.get("current_2")))
-            self.actual_i_p3_input.setText("{:.2f}".format(params.get("current_3")))
-
-        else:
-            QMessageBox.warning(self, "Modbus Error", "Could not read all parameters or no Modbus connection.")
-
 
     def fill_pdf_template(self):
         owner = self.owner_input.text()
