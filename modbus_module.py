@@ -25,6 +25,7 @@ class ModbusConnect(ModbusTcpClient):
 class ReadRegisterWorker(QObject):
     progress_updated = Signal(int)
     amp_readings = Signal(dict)
+    error_catch = Signal(bool, Exception)
     finished = Signal()
     # set list of parameters to measure
     names = ["volts_1", "volts_2", "volts_3", "current_1", "current_2", "current_3"]
@@ -69,12 +70,14 @@ class ReadRegisterWorker(QObject):
             for key, value in self.params_raw.items():
                 self.params_max.update({ key : max(value) })
             
+            print("Successfully read registers!")
             # signal the output
             self.amp_readings.emit(self.params_max)
             # signal the job is done
             self.finished.emit()
 
         except Exception as e:
+            self.error_catch.emit(True, e)
             print(f"Exception during Modbus read: {e}")
 
     def stop(self):
