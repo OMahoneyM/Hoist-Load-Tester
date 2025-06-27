@@ -62,7 +62,8 @@ class ReadRegisterWorker(QObject):
                     self.params_raw.setdefault(name, []).append(value)
             
                 # signal an update to progress
-                self.progress_updated.emit(i)
+                progress = int((i + 1) / total_iterations * 100)
+                self.progress_updated.emit(progress)
                 # put program to sleep for 200ms
                 time.sleep(0.2)
 
