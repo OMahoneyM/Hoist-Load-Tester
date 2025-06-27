@@ -1,9 +1,11 @@
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QFormLayout,
     QLineEdit, QPushButton, QFileDialog, QMessageBox, 
-    QComboBox, QRadioButton, QButtonGroup, QHBoxLayout
+    QComboBox, QRadioButton, QButtonGroup, QHBoxLayout, QProgressBar
 )
 from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import QThread, Signal
+
 import sys
 import os
 import platform
@@ -13,26 +15,25 @@ import ctypes
 
 # Add this import to use your Modbus reading function
 from clienttest import read_first_six_3000_parameters
+from modbus_module import ModbusConnect, ReadRegisterWorker
 
 
 class PDFTemplateApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AVL Load Tester")
-        self.set_icon()
-
-        # Use a Windows call from Python, to explicitly tell Windows 
-        # what the correct AppUserModelID is for this process and display:
-        if platform.system() == 'Windows':
-            myappid = 'HoistLoadTester.1.0' # arbitrary string
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
+        # self.set_icon()
         self.setup_ui()
 
     def set_icon(self):
         icon_path = os.path.join(sys._MEIPASS, 'icon.png')        
         icon = QIcon(QPixmap(icon_path))
         self.setWindowIcon(icon)
+        # Use a Windows call from Python, to explicitly tell Windows 
+        # what the correct AppUserModelID is for this process and display:
+        if platform.system() == 'Windows':
+            myappid = 'HoistLoadTester.1.0' # arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
     def setup_ui(self):
@@ -95,14 +96,68 @@ class PDFTemplateApp(QWidget):
         layout.addLayout(form_layout)
 
         self.run_test_btn = QPushButton("Run Load Test")
-        self.run_test_btn.clicked.connect(self.test_load)
+        # self.run_test_btn.clicked.connect(self.test_load)
+        self.run_test_btn.clicked.connect(self.start_task)
         layout.addWidget(self.run_test_btn)
+
+        # Load Test progress bar
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
 
         self.generate_btn = QPushButton("Generate Report")
         self.generate_btn.clicked.connect(self.fill_pdf_template)
         layout.addWidget(self.generate_btn)
 
         self.setLayout(layout)
+
+    def start_task(self):
+        # reset progress bar
+        self.progress_bar.setValue(0)
+        # disable button click while running
+        self.run_test_btn.setEnabled(False)
+
+        # instantiate thread
+        self.thread = QThread()
+        # instantiate connection to modbus
+        self.client = ModbusConnect(self.modbus_ip.text())
+        # instantiate modbus register reading worker object
+        self.worker = ReadRegisterWorker(self.client)
+        # move worker to thread
+        self.worker.moveToThread(self.thread)
+
+        # connect QThread started signal to worker's method
+        self.thread.started.connect(self.worker.read_registers)
+        # update the progress bar
+        self.worker.progress_updated.connect(self.update_progress_bar)
+        # connect output to function
+        self.worker.amp_readings.connect(self.post_amp_readings)
+        # allow user to press button again
+        self.worker.finished.connect(self.process_finished)
+        # shutdown thread's event loop
+        self.worker.finished.connect(self.thread.quit)
+        # clean up worker
+        self.worker.finished.connect(self.worker.deleteLater)
+        # clean up thread
+        self.thread.finished.connect(self.thread.deleteLater)
+        
+        # Call start() on the QThread instance to begin execution 
+        # of the thread and its event loop, which will then trigger 
+        # the connected worker's method.
+        self.thread.start()
+
+    def update_progress_bar(self, value):
+        self.progress_bar.setValue(value)
+
+    def post_amp_readings(self, result):
+        self.actual_i_p1_input.setText("{:.2f}".format(result.get("current_1")))
+        self.actual_i_p2_input.setText("{:.2f}".format(result.get("current_2")))
+        self.actual_i_p3_input.setText("{:.2f}".format(result.get("current_3")))
+    
+    def process_finished(self):
+        self.run_test_btn.setEnabled(True)
+        print("Process completed!")
 
     # connect to modbus and write values to form
     def test_load(self):
@@ -236,7 +291,8 @@ class PDFTemplateApp(QWidget):
             self.overload_no.setChecked(False)
             self.overload_group.setExclusive(True)
 
-
+            # reset progress bar
+            self.progress_bar.setValue(0)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to generate PDF:\n{e}")
