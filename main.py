@@ -1,12 +1,13 @@
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QFormLayout,
     QLineEdit, QPushButton, QFileDialog, QMessageBox, 
-    QComboBox, QRadioButton, QButtonGroup, QHBoxLayout, QProgressBar
+    QComboBox, QRadioButton, QButtonGroup, QHBoxLayout, QProgressBar, QLabel
 )
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QThread, Signal
 
 from modbus_module import ModbusConnect, ReadRegisterWorker
+import flexerp_api
 
 import sys
 import os
@@ -20,6 +21,8 @@ class PDFTemplateApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AVL Load Tester")
+        # Store FlexERP inventory data for PDF generation
+        self.flexerp_data = {}
         self.set_icon()
         self.setup_ui()
 
@@ -39,6 +42,19 @@ class PDFTemplateApp(QWidget):
 
         # create input fields
         self.modbus_ip = QLineEdit(text="192.168.13.11")
+        
+        # FlexERP Barcode Integration Section
+        # Barcode input field for inventory lookup (format: ^12345)
+        self.barcode_input = QLineEdit()
+        self.barcode_input.setPlaceholderText("Enter or scan barcode (e.g., ^12345)")
+        
+        # Button to fetch data from FlexERP API
+        self.fetch_flexerp_btn = QPushButton("Fetch FlexERP Data")
+        self.fetch_flexerp_btn.clicked.connect(self.fetch_flexerp_data)
+        
+        # Label to display FlexERP fetch status
+        self.flexerp_status_label = QLabel("")
+        
         self.tester_input = QLineEdit()
         self.owner_input = QLineEdit()
         self.address_input = QLineEdit()
@@ -72,6 +88,17 @@ class PDFTemplateApp(QWidget):
 
         # Add input fields to the layout with labels
         form_layout.addRow("Modbus IP:", self.modbus_ip)
+        
+        # FlexERP Barcode Section
+        form_layout.addRow("", QLabel(""))  # Spacer
+        form_layout.addRow("Barcode (FlexERP):", self.barcode_input)
+        barcode_btn_layout = QHBoxLayout()
+        barcode_btn_layout.addWidget(self.fetch_flexerp_btn)
+        barcode_btn_layout.addWidget(self.flexerp_status_label)
+        barcode_btn_layout.addStretch()
+        form_layout.addRow("", barcode_btn_layout)
+        form_layout.addRow("", QLabel(""))  # Spacer
+        
         form_layout.addRow("Tester:", self.tester_input)
         form_layout.addRow("Owner:", self.owner_input)
         form_layout.addRow("Address:", self.address_input)
@@ -166,7 +193,97 @@ class PDFTemplateApp(QWidget):
         self.stop_thread()
         print("Process completed!")
 
+    def fetch_flexerp_data(self):
+        """
+        Fetch inventory data from FlexERP API based on barcode input.
+        
+        This method:
+        1. Retrieves barcode from input field
+        2. Parses and validates the barcode format
+        3. Makes API call to FlexERP to fetch inventory data
+        4. Auto-populates form fields with the returned data
+        5. Stores data for later use in PDF generation
+        
+        The barcode format should be: ^12345 (or just 12345)
+        """
+        barcode = self.barcode_input.text().strip()
+        
+        if not barcode:
+            QMessageBox.warning(self, "Missing Barcode", "Please enter a barcode to fetch inventory data.")
+            self.flexerp_status_label.setText("")
+            return
+        
+        # Update status
+        self.flexerp_status_label.setText("Fetching...")
+        self.flexerp_status_label.setStyleSheet("color: blue;")
+        QApplication.processEvents()  # Force UI update
+        
+        # Fetch data from FlexERP API
+        result = flexerp_api.fetch_from_barcode(barcode)
+        
+        if result.get('success'):
+            # Store the data for PDF generation
+            self.flexerp_data = result
+            
+            # Auto-populate form fields with FlexERP data
+            # Only populate fields that have data and are currently empty (to avoid overwriting user input)
+            if result.get('description') and not self.hoist_desc_input.text():
+                self.hoist_desc_input.setText(result.get('description', ''))
+            
+            if result.get('manufacturer') and not self.manufacturer_input.text():
+                self.manufacturer_input.setText(result.get('manufacturer', ''))
+            
+            if result.get('model') and not self.model_input.text():
+                self.model_input.setText(result.get('model', ''))
+            
+            if result.get('serial_number') and not self.serial_no_input.text():
+                self.serial_no_input.setText(result.get('serial_number', ''))
+            
+            if result.get('power_supply') and not self.power_supply_input.text():
+                self.power_supply_input.setText(result.get('power_supply', ''))
+            
+            if result.get('rated_capacity'):
+                # Try to match rated capacity to dropdown options
+                rated_cap = result.get('rated_capacity', '')
+                index = self.rated_cap_dropdown.findText(rated_cap)
+                if index >= 0:
+                    self.rated_cap_dropdown.setCurrentIndex(index)
+            
+            # Update status label
+            self.flexerp_status_label.setText("✓ Data loaded")
+            self.flexerp_status_label.setStyleSheet("color: green;")
+            
+            # Show success message
+            QMessageBox.information(
+                self, 
+                "FlexERP Data Retrieved", 
+                f"Successfully loaded inventory data for ID: {result.get('inventory_id', barcode)}\n\n"
+                f"Available fields have been auto-populated."
+            )
+        else:
+            # Show error
+            error_msg = result.get('error', 'Unknown error occurred')
+            self.flexerp_status_label.setText("✗ Failed")
+            self.flexerp_status_label.setStyleSheet("color: red;")
+            QMessageBox.warning(
+                self, 
+                "FlexERP Data Fetch Failed", 
+                f"Failed to retrieve inventory data:\n\n{error_msg}\n\n"
+                f"Please check:\n"
+                f"1. Barcode format (should be ^12345 or 12345)\n"
+                f"2. FlexERP credentials in config.py or .env file\n"
+                f"3. Network connectivity to FlexERP API"
+            )
+
+
     def fill_pdf_template(self):
+        """
+        Fill PDF template with form data and FlexERP inventory data.
+        
+        This method integrates data from both manual form input and FlexERP API.
+        It preserves backward compatibility with existing PDF templates while
+        adding support for FlexERP inventory fields.
+        """
         owner = self.owner_input.text()
         tester = self.tester_input.text()
         address = self.address_input.text()
@@ -251,11 +368,36 @@ class PDFTemplateApp(QWidget):
                         field.field_value = time_split[2]
                     elif field.field_name == "full_date":
                         field.field_value = cur_date
+                    
+                    # FlexERP inventory data fields (if template supports them)
+                    # These fields are populated from FlexERP API data if available
+                    # If the PDF template doesn't have these fields, they are safely ignored
+                    elif field.field_name == "inventory_id" and self.flexerp_data.get('inventory_id'):
+                        field.field_value = str(self.flexerp_data.get('inventory_id', ''))
+                    elif field.field_name == "flexerp_description" and self.flexerp_data.get('description'):
+                        field.field_value = self.flexerp_data.get('description', '')
+                    elif field.field_name == "flexerp_manufacturer" and self.flexerp_data.get('manufacturer'):
+                        field.field_value = self.flexerp_data.get('manufacturer', '')
+                    elif field.field_name == "flexerp_model" and self.flexerp_data.get('model'):
+                        field.field_value = self.flexerp_data.get('model', '')
+                    elif field.field_name == "flexerp_specifications" and self.flexerp_data.get('specifications'):
+                        # Convert specifications dict to string if needed
+                        specs = self.flexerp_data.get('specifications', {})
+                        if isinstance(specs, dict):
+                            field.field_value = ', '.join([f"{k}: {v}" for k, v in specs.items()])
+                        else:
+                            field.field_value = str(specs)
 
                     field.update()
 
             doc.save(save_path)
-            QMessageBox.information(self, "Success", f"PDF saved to:\n{save_path}")
+            
+            # Notify user of successful save
+            success_msg = f"PDF saved to:\n{save_path}"
+            if self.flexerp_data.get('success'):
+                success_msg += f"\n\nFlexERP inventory data included for ID: {self.flexerp_data.get('inventory_id', 'N/A')}"
+            
+            QMessageBox.information(self, "Success", success_msg)
 
             # Clear fields after save
             self.owner_input.clear()
@@ -285,6 +427,11 @@ class PDFTemplateApp(QWidget):
 
             # reset progress bar
             self.progress_bar.setValue(0)
+            
+            # Clear barcode and FlexERP data
+            self.barcode_input.clear()
+            self.flexerp_data = {}
+            self.flexerp_status_label.setText("")
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to generate PDF:\n{e}")
