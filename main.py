@@ -244,10 +244,12 @@ class PDFTemplateApp(QWidget):
             
             if result.get('rated_capacity'):
                 # Try to match rated capacity to dropdown options
+                # Only auto-select if dropdown is at default (first item)
                 rated_cap = result.get('rated_capacity', '')
-                index = self.rated_cap_dropdown.findText(rated_cap)
-                if index >= 0:
-                    self.rated_cap_dropdown.setCurrentIndex(index)
+                if self.rated_cap_dropdown.currentIndex() == 0:
+                    index = self.rated_cap_dropdown.findText(rated_cap)
+                    if index >= 0:
+                        self.rated_cap_dropdown.setCurrentIndex(index)
             
             # Update status label
             self.flexerp_status_label.setText("✓ Data loaded")

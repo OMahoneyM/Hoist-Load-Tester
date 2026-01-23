@@ -34,6 +34,11 @@ def parse_barcode(barcode_input: str) -> Optional[str]:
         "12345"
         >>> parse_barcode("^ABC123")
         "123"
+        
+    Note:
+        This extracts the first sequence of consecutive digits found in the input.
+        For barcodes with multiple numeric sequences (e.g., ABC123DEF456), 
+        only the first sequence (123) will be extracted.
     """
     if not barcode_input:
         return None
@@ -41,7 +46,7 @@ def parse_barcode(barcode_input: str) -> Optional[str]:
     # Remove leading ^ if present
     cleaned = barcode_input.lstrip('^').strip()
     
-    # Extract numeric portion
+    # Extract first sequence of consecutive digits
     match = re.search(r'\d+', cleaned)
     if match:
         return match.group()
@@ -97,25 +102,24 @@ def fetch_inventory_data(inventory_id: str) -> Dict[str, Any]:
     
     # TODO: Configure authentication headers based on FlexERP API requirements
     # Options may include: Basic Auth, Bearer Token, API Key, etc.
+    # Note: Only one authentication method should be used at a time
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
     
-    # Add authentication to headers based on credential type
+    # Determine authentication method to use
+    # Priority: API Key > Username/Password
+    auth = None
     if credentials['api_key']:
         # API Key authentication (adjust header name as needed)
         headers['X-API-Key'] = credentials['api_key']
     elif credentials['username'] and credentials['password']:
         # Will use Basic Auth in the request below
-        pass
+        auth = (credentials['username'], credentials['password'])
     
     try:
         # Make API request with configured timeout and retry logic
-        auth = None
-        if credentials['username'] and credentials['password']:
-            auth = (credentials['username'], credentials['password'])
-        
         response = requests.get(
             endpoint,
             headers=headers,

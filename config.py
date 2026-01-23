@@ -76,7 +76,18 @@ def validate_credentials():
     
     # TODO: Adjust validation based on actual FlexERP authentication requirements
     # This may require username/password, API key, or other authentication methods
-    if not creds['username'] and not creds['api_key']:
-        return False, "FlexERP credentials not configured. Please set FLEXERP_USERNAME or FLEXERP_API_KEY in .env file."
     
-    return True, ""
+    # Check for API key authentication
+    if creds['api_key']:
+        return True, ""
+    
+    # Check for username/password authentication
+    if creds['username'] and creds['password']:
+        return True, ""
+    
+    # Check if username is provided without password
+    if creds['username'] and not creds['password']:
+        return False, "FLEXERP_USERNAME is set but FLEXERP_PASSWORD is missing in .env file."
+    
+    # No credentials configured
+    return False, "FlexERP credentials not configured. Please set FLEXERP_USERNAME/FLEXERP_PASSWORD or FLEXERP_API_KEY in .env file."
