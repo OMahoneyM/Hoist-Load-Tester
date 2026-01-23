@@ -3,14 +3,27 @@ Configuration module for FlexERP API credentials and settings.
 
 This module manages secure credential storage and retrieval for the FlexERP API integration.
 Users should configure their credentials in a .env file or directly update the default values below.
+
+When running as a compiled executable, place the .env file in the same directory as the .exe file.
 """
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Determine the base path for the application
+# When running as PyInstaller executable, use the executable directory
+# When running as Python script, use the script directory
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    BASE_DIR = Path(sys.executable).parent
+else:
+    # Running as Python script
+    BASE_DIR = Path(__file__).parent
+
 # Load environment variables from .env file if it exists
-env_path = Path(__file__).parent / '.env'
+env_path = BASE_DIR / '.env'
 if env_path.exists():
     load_dotenv(env_path)
 

@@ -6,6 +6,10 @@ This document provides detailed information about the FlexERP barcode integratio
 
 The FlexERP integration allows users to scan or manually enter barcodes to automatically fetch and populate hoist inventory data from the FlexERP system. This streamlines the load testing workflow by reducing manual data entry.
 
+**Works with both:**
+- Compiled executable (.exe) - for end users
+- Python scripts - for developers
+
 ## Architecture
 
 ### New Components
@@ -15,6 +19,7 @@ The FlexERP integration allows users to scan or manually enter barcodes to autom
    - Loads settings from .env file or environment variables
    - Validates credential configuration
    - Provides default values for API settings
+   - **Automatically detects if running as executable or script**
 
 2. **flexerp_api.py** - API Client Module
    - Parses barcode input to extract inventory IDs
@@ -39,9 +44,36 @@ The FlexERP integration allows users to scan or manually enter barcodes to autom
    - Extended PDF generation to include FlexERP data
    - Maintains backward compatibility
 
+2. **hoist-load-tester.spec** - PyInstaller Build Configuration
+   - Updated to include new modules (config, flexerp_api)
+   - Bundles .env.example file with executable
+   - Includes required dependencies (requests, dotenv)
+
 ## Usage Instructions
 
-### Initial Setup
+### For End Users (Using the Executable)
+
+1. **Locate the .env.example file** in the same directory as `hoist-load-tester-v1.4.0.exe`
+
+2. **Copy and rename** `.env.example` to `.env` (in the same directory as the .exe)
+
+3. **Edit the .env file** with a text editor (Notepad, Notepad++, etc.) and add your FlexERP credentials:
+   ```
+   # Option 1: API Key (preferred)
+   FLEXERP_API_KEY=your_api_key_here
+   
+   # Option 2: Username/Password
+   FLEXERP_USERNAME=your_username
+   FLEXERP_PASSWORD=your_password
+   ```
+
+4. **Save the file** and close the text editor
+
+5. **Double-click the .exe** to launch the application
+
+**Note:** The application will look for the `.env` file in the same directory as the executable.
+
+### For Developers (Using Python Scripts)
 
 1. Copy the environment template:
    ```bash
@@ -78,6 +110,8 @@ This will show:
 ### Using in the Application
 
 1. Launch the application:
+   - **Executable:** Double-click `hoist-load-tester-v1.4.0.exe`
+   - **Python:** Run `python main.py`
    ```bash
    python main.py
    ```

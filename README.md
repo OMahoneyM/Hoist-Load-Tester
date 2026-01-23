@@ -13,15 +13,44 @@ This software is used to connect to a networked modbus and record current draw f
 
 **Tech used:** Python, PySide6, PyModBus, PyMuPDF, PyInstaller, Requests
 
-## Setup and Installation
+## For End Users (Using the Compiled Executable)
 
-### 1. Install Dependencies
+### Download and Run
+
+1. Download the latest `hoist-load-tester-v1.4.0.exe` from the releases page
+2. Double-click the `.exe` file to launch the application
+3. The application will open with the familiar interface
+
+### Configure FlexERP Integration (Optional)
+
+To enable FlexERP barcode integration:
+
+1. Locate the `.env.example` file in the same directory as the `.exe` file
+2. Copy `.env.example` and rename it to `.env` (in the same directory as the .exe)
+3. Open `.env` with a text editor (Notepad, Notepad++, etc.)
+4. Add your FlexERP credentials:
+   ```
+   FLEXERP_API_BASE_URL=https://flex-solutions-inc.github.io/FlexERP-Public/
+   FLEXERP_USERNAME=your_username_here
+   FLEXERP_PASSWORD=your_password_here
+   # OR
+   FLEXERP_API_KEY=your_api_key_here
+   ```
+5. Save the file and restart the application
+
+**Note:** FlexERP integration is optional. The application works normally without it.
+
+## For Developers
+
+### Setup and Installation
+
+#### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure FlexERP Integration (Optional)
+#### 2. Configure FlexERP Integration (Optional)
 
 The application includes optional FlexERP API integration for barcode-based inventory lookup.
 
@@ -47,11 +76,31 @@ The application includes optional FlexERP API integration for barcode-based inve
 
 You can also configure credentials directly in `config.py` by editing the default values (not recommended for production).
 
-### 3. Run the Application
+#### 3. Run the Application
 
 ```bash
 python main.py
 ```
+
+#### 4. Building the Executable
+
+To create a standalone executable for distribution:
+
+```bash
+# Ensure all dependencies are installed
+pip install -r requirements.txt
+
+# Build the executable using PyInstaller
+pyinstaller hoist-load-tester.spec
+
+# The compiled executable will be in the dist/ directory
+# dist/hoist-load-tester-v1.4.0.exe
+```
+
+**Important:** When distributing the executable:
+- Include the `.env.example` file in the same directory as the .exe
+- Users can copy and rename it to `.env` to configure FlexERP credentials
+- The application will automatically look for the `.env` file next to the executable
 
 ## Using FlexERP Barcode Integration
 
