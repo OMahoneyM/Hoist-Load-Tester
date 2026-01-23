@@ -66,6 +66,19 @@ python main.py
 
 **Note:** FlexERP integration is optional. The application works normally without it.
 
+## Testing FlexERP Integration
+
+A test script is provided to verify the FlexERP integration without running the full GUI:
+
+```bash
+python test_flexerp_integration.py
+```
+
+This will test:
+- Barcode parsing with various formats
+- Credential validation
+- API connectivity (if credentials are configured)
+
 ## Configuration Notes
 
 ### FlexERP API Endpoints
