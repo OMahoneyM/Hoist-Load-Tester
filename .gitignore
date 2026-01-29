@@ -1,2 +1,17 @@
 assets/images/AVL*
 testing/*
+
+# Environment variables and credentials
+.env
+.env.local
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.vscode/
+.idea/
