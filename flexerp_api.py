@@ -62,18 +62,30 @@ def fetch_inventory_data(inventory_id: str) -> Dict[str, Any]:
         inventory_id (str): Numeric inventory ID to look up
         
     Returns:
-        Dict[str, Any]: Dictionary containing inventory data with keys such as:
+        Dict[str, Any]: Dictionary containing inventory data with keys:
+            Core fields (mapped to PDF template):
             - inventory_id: The inventory ID
-            - description: Item description
-            - manufacturer: Manufacturer name
-            - model: Model number
-            - serial_number: Serial number
-            - specifications: Additional specifications
+            - description: Item description → hoist_desc
+            - manufacturer: Manufacturer name → manufacturer
+            - model: Model number → model
+            - serial_number: Serial number → serial_no
+            - power_supply: Power specifications → power_supply
+            - rated_capacity: Rated capacity → rated_cap
+            
+            Optional fields (if available in FlexERP):
+            - owner: Customer/owner name → owner
+            - location: Location/address → address
+            - current_rating: Manufacturer current spec → man_spec_i
+            - specifications: Additional specifications (dict)
+            
+            Status fields:
             - success: Boolean indicating API call success
             - error: Error message if success is False
+            - raw_data: Complete API response for reference
             
     Note:
         This function makes a synchronous HTTP request to the FlexERP API.
+        Field mappings align with the AVL Letterhead.pdf template fields.
         
     TODO: Complete authentication implementation based on FlexERP API requirements.
           Current implementation uses placeholder authentication.
@@ -142,6 +154,9 @@ def fetch_inventory_data(inventory_id: str) -> Dict[str, Any]:
                 'serial_number': data.get('serial_number', ''),
                 'power_supply': data.get('power_supply', ''),
                 'rated_capacity': data.get('rated_capacity', ''),
+                'owner': data.get('owner', ''),  # Customer/owner information
+                'location': data.get('location', ''),  # Location/address
+                'current_rating': data.get('current_rating', ''),  # Manufacturer current spec
                 'specifications': data.get('specifications', {}),
                 'raw_data': data  # Preserve original response for reference
             }

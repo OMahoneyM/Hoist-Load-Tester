@@ -138,23 +138,43 @@ The system accepts flexible barcode formats:
 - `^ABC123` - Mixed alphanumeric (extracts: 123)
 - Any format containing digits (first sequence is extracted)
 
-## PDF Template Fields
+## PDF Template Integration
 
-### Standard Fields (existing)
-- owner, tester, address, hoist_desc
-- manufacturer, model, serial_no, power_supply
-- rated_cap, load_test_spec, pounds, overload
+### Actual PDF Template Fields
+
+The AVL Letterhead.pdf template contains these form fields:
+
+**Test Information:**
+- owner, tester, address
+- date, month, year, full_date
+
+**Equipment Information:**
+- hoist_desc, manufacturer, model, serial_no
+- power_supply, rated_cap
+
+**Test Results:**
+- load_test_spec, pounds, overload
 - man_spec_i, actual_i_p1, actual_i_p2, actual_i_p3
-- comments, date, month, year, full_date
+- comments
 
-### FlexERP Fields (new, optional)
-- inventory_id
-- flexerp_description
-- flexerp_manufacturer
-- flexerp_model
-- flexerp_specifications
+### FlexERP Data Mapping
 
-**Note:** FlexERP fields are optional in your PDF template. If they don't exist in the template, they are safely ignored.
+When you fetch data from FlexERP, it automatically populates these existing PDF fields:
+
+| PDF Field | FlexERP Field | Auto-Populated | Notes |
+|-----------|---------------|----------------|-------|
+| hoist_desc | description | ✓ | Equipment description |
+| manufacturer | manufacturer | ✓ | Manufacturer name |
+| model | model | ✓ | Model number |
+| serial_no | serial_number | ✓ | Serial number |
+| power_supply | power_supply | ✓ | Power specifications |
+| rated_cap | rated_capacity | ✓ | Capacity (dropdown match) |
+| owner | owner | ✓ | Customer name (if available in FlexERP) |
+| address | location | ✓ | Location/address (if available in FlexERP) |
+| man_spec_i | current_rating | ✓ | Current rating (if available in FlexERP) |
+| comments | inventory_id | ✓ | Inventory ID prepended to comments |
+
+**Important:** The integration uses the EXISTING PDF template fields. You do not need to modify your PDF template to use FlexERP integration. The system maps FlexERP data to the appropriate existing fields.
 
 ## Customization
 

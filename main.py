@@ -227,6 +227,8 @@ class PDFTemplateApp(QWidget):
             
             # Auto-populate form fields with FlexERP data
             # Only populate fields that have data and are currently empty (to avoid overwriting user input)
+            
+            # Basic hoist information
             if result.get('description') and not self.hoist_desc_input.text():
                 self.hoist_desc_input.setText(result.get('description', ''))
             
@@ -250,6 +252,16 @@ class PDFTemplateApp(QWidget):
                     index = self.rated_cap_dropdown.findText(rated_cap)
                     if index >= 0:
                         self.rated_cap_dropdown.setCurrentIndex(index)
+            
+            # Additional fields that may be available from FlexERP
+            if result.get('owner') and not self.owner_input.text():
+                self.owner_input.setText(result.get('owner', ''))
+            
+            if result.get('location') and not self.address_input.text():
+                self.address_input.setText(result.get('location', ''))
+            
+            if result.get('current_rating') and not self.man_spec_i_input.text():
+                self.man_spec_i_input.setText(result.get('current_rating', ''))
             
             # Update status label
             self.flexerp_status_label.setText("✓ Data loaded")
@@ -361,7 +373,15 @@ class PDFTemplateApp(QWidget):
                     elif field.field_name == "actual_i_p3":
                         field.field_value = actual_i_p3
                     elif field.field_name == "comments":
-                        field.field_value = comments
+                        # Include FlexERP inventory ID in comments if available
+                        comments_text = comments
+                        if self.flexerp_data.get('success') and self.flexerp_data.get('inventory_id'):
+                            inv_id = self.flexerp_data.get('inventory_id')
+                            if comments_text:
+                                comments_text = f"Inventory ID: {inv_id}\n{comments_text}"
+                            else:
+                                comments_text = f"Inventory ID: {inv_id}"
+                        field.field_value = comments_text
                     elif field.field_name == "date":
                         field.field_value = time_split[0]
                     elif field.field_name == "month":
@@ -370,25 +390,6 @@ class PDFTemplateApp(QWidget):
                         field.field_value = time_split[2]
                     elif field.field_name == "full_date":
                         field.field_value = cur_date
-                    
-                    # FlexERP inventory data fields (if template supports them)
-                    # These fields are populated from FlexERP API data if available
-                    # If the PDF template doesn't have these fields, they are safely ignored
-                    elif field.field_name == "inventory_id" and self.flexerp_data.get('inventory_id'):
-                        field.field_value = str(self.flexerp_data.get('inventory_id', ''))
-                    elif field.field_name == "flexerp_description" and self.flexerp_data.get('description'):
-                        field.field_value = self.flexerp_data.get('description', '')
-                    elif field.field_name == "flexerp_manufacturer" and self.flexerp_data.get('manufacturer'):
-                        field.field_value = self.flexerp_data.get('manufacturer', '')
-                    elif field.field_name == "flexerp_model" and self.flexerp_data.get('model'):
-                        field.field_value = self.flexerp_data.get('model', '')
-                    elif field.field_name == "flexerp_specifications" and self.flexerp_data.get('specifications'):
-                        # Convert specifications dict to string if needed
-                        specs = self.flexerp_data.get('specifications', {})
-                        if isinstance(specs, dict):
-                            field.field_value = ', '.join([f"{k}: {v}" for k, v in specs.items()])
-                        else:
-                            field.field_value = str(specs)
 
                     field.update()
 

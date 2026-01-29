@@ -147,23 +147,33 @@ The FlexERP API integration is configured in `config.py` and `flexerp_api.py`.
 
 ### PDF Template Fields
 
-The PDF generation supports both standard hoist testing fields and optional FlexERP fields:
+The PDF template (AVL Letterhead.pdf) contains the following form fields that can be populated:
 
-**Standard Fields:**
-- owner, tester, address, hoist_desc
-- manufacturer, model, serial_no, power_supply
+**Standard Testing Fields:**
+- owner, tester, address
+- hoist_desc, manufacturer, model, serial_no, power_supply
 - rated_cap, load_test_spec, pounds, overload
 - man_spec_i, actual_i_p1, actual_i_p2, actual_i_p3
 - comments, date, month, year, full_date
 
-**FlexERP Fields (optional in template):**
-- inventory_id
-- flexerp_description
-- flexerp_manufacturer
-- flexerp_model
-- flexerp_specifications
+**FlexERP Integration - Field Mapping:**
 
-If your PDF template doesn't include FlexERP fields, they will be safely ignored.
+When FlexERP data is fetched, it automatically populates the following PDF fields:
+
+| PDF Field | FlexERP Data Field | Description |
+|-----------|-------------------|-------------|
+| hoist_desc | description | Hoist/equipment description |
+| manufacturer | manufacturer | Manufacturer name |
+| model | model | Model number |
+| serial_no | serial_number | Serial number |
+| power_supply | power_supply | Power supply specifications |
+| rated_cap | rated_capacity | Rated capacity (1/4 ton, 1/2 ton, etc.) |
+| owner | owner | Customer/owner name (if available) |
+| address | location | Customer location/address (if available) |
+| man_spec_i | current_rating | Manufacturer current specification (if available) |
+| comments | inventory_id | Inventory ID prepended to comments |
+
+**Note:** FlexERP fields are mapped to existing PDF form fields. The integration does not require any modification to your existing PDF template.
 
 ## Optimization:
 
